@@ -12,16 +12,18 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
 public class Handler {
-    private final RegistrarEventoUseCase registrarEventoGuiaUseCase;
     private final Validator validator;
+    private final RegistrarEventoUseCase registrarEventoUseCase;
+
 
     public Handler(RegistrarEventoUseCase registrarEventoGuiaUseCase, Validator validator) {
-        this.registrarEventoGuiaUseCase = registrarEventoGuiaUseCase;
+        this.registrarEventoUseCase = registrarEventoGuiaUseCase;
         this.validator = validator;
     }
 
@@ -30,8 +32,11 @@ public class Handler {
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("cuerpo de la peticion vacio")))
                 .map(this::validar)
                 .map(EventoGuiaMapper::aDominio)
-                .flatMap(registrarEventoGuiaUseCase::ejecutar)
-                .flatMap(this::responderCreado);
+                .flatMap(registrarEventoUseCase::ejecutar)
+                .flatMap(this::responderCreado)
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> ServerResponse.badRequest().bodyValue(
+                                Map.of("message", e.getMessage())));
     }
 
     private EventoGuiaRequest validar(EventoGuiaRequest body) {

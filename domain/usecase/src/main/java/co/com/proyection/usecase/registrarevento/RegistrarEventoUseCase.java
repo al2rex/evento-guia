@@ -24,7 +24,7 @@ public class RegistrarEventoUseCase {
 
     private Mono<EventoGuia> publicarYRegistrar(EventoGuia evento) {
         return publisherGateway.publicar(evento)
-                .then(idempotenciaGateway.registrar(evento.getEventoId()))
+                .then(Mono.defer(() -> idempotenciaGateway.registrar(evento.getEventoId())))
                 .thenReturn(evento);
     }
 
